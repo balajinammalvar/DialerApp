@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--event logging-->
+    <string name="analytics_key_source" >source</string>
+    <string name="analytics_key_params" >params</string>
+    <string name="analytics_key_method" >method</string>
+    <string name="analytics_key_type"   >type</string>
+    <string name="analytics_key_reason" >reason</string>
+
+
+    <!--Whats app direct-->
+    <string name="analytics_splash">ENTERED_SPLASH_SCREEN</string>
+    <string name="analytics_call_history">ENTERED_CALL_HISTORY</string>
+    <string name="analytics_dialer">ENTERED_DIALER_SCREEN</string>
+    <string name="analytics_contact">ENTERED_CONTACT_SCREEN</string>
+    <string name="analytics_call_history_details">ENTERED_CALL_HISTORY_DETAILS</string>
+    <string name="analytics_call_history_search">CALL_HISTORY_SEARCH_USED</string>
+    <string name="analytics_contact_search">ENTER_CONTACT_SEARCH</string>
+    <string name="analytics_contact_details">ENTERED_CONTACT_DETAILS</string>
+    <string name="analytics_backp">BACK</string>
+    <string name="analytics_session_over">SESSION_OVER</string>
+    <string name="analytics_session_start">SESSION_START</string>
+    <string name="analytics_session_exception">EXCEPTION OCCURRED</string>
+</resources>

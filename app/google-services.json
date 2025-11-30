@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "563624121206",
+    "project_id": "dialerapp-a80d7",
+    "storage_bucket": "dialerapp-a80d7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:563624121206:android:645e182e5bea339b5be057",
+        "android_client_info": {
+          "package_name": "com.balaji.callhistory"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNwcZUL1qh4a9MEVEWjxQsluvK7FI569U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
