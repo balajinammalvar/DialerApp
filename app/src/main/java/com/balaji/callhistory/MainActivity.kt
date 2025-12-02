@@ -17,7 +17,9 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +63,8 @@ class MainActivity : ComponentActivity() {
         // keep for backward compatibility (optional)
         var repository: CallHistoryRepository? = null
     }
+    
+    private var pendingPhoneNumber by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
@@ -69,6 +73,7 @@ class MainActivity : ComponentActivity() {
 
         var hasPermissions by mutableStateOf(false)
         var isCallHistoryLoaded by mutableStateOf(false)
+        pendingPhoneNumber = intent?.data?.schemeSpecificPart
 
         // Check permissions early
         hasPermissions = PermissionManager.hasAllPermissions(applicationContext)
@@ -89,11 +94,17 @@ class MainActivity : ComponentActivity() {
 
         // ViewModel factories
         val dialerFactory = viewModelFactory {
-            initializer { DialerViewModel(repo, applicationContext) }
+            initializer { DialerViewModel(applicationContext, repo) }
         }
 
         setContent {
             val darkModeState = DarkModeState.getInstance()
+            val isSystemInDarkTheme = isSystemInDarkTheme()
+            
+            LaunchedEffect(isSystemInDarkTheme) {
+                darkModeState.state.value = isSystemInDarkTheme
+            }
+            
             val currentTheme by darkModeState.state.collectAsState()
 
             AppTheme(darkTheme = currentTheme) {
@@ -103,6 +114,14 @@ class MainActivity : ComponentActivity() {
 
                 // instantiate DialerViewModel (used across multiple screens in your app)
                 val dialerViewModel = viewModel<DialerViewModel>(factory = dialerFactory)
+
+                // Set phone number from intent if available
+                LaunchedEffect(pendingPhoneNumber) {
+                    pendingPhoneNumber?.let { 
+                        dialerViewModel.clearNumber()
+                        dialerViewModel.setNumber(it)
+                    }
+                }
 
                 // Check if call history is loaded when permissions are available (original logic)
                 if (hasPermissions) {
@@ -128,10 +147,27 @@ class MainActivity : ComponentActivity() {
                     ) {
                         finish()
                     }
+                    
+                    // Navigate to dialer if phone number from intent
+                    LaunchedEffect(pendingPhoneNumber) {
+                        if (pendingPhoneNumber != null) {
+                            nav.navigate(DialerRoute) {
+                                popUpTo(nav.graph.startDestinationId)
+                                launchSingleTop = true
+                            }
+                        }
+                    }
+                    
                     NavHostBuilder(nav, paddingValues, dialerViewModel)
                 }
             }
         }
+    }
+    
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingPhoneNumber = intent.data?.schemeSpecificPart
     }
 }
 
@@ -209,7 +245,6 @@ private fun NavHostBuilder(
         // History screen
         composable<HistoryRoute> {
             CallHistoryScreen(
-                dialerViewModel = dialerViewModel,
                 onNavigateToTheme = { nav.navigate(ThemeRoute) },
                 onNavigateToDetails = { phoneNumber ->
                     nav.navigate(CallHistoryDetailsRoute(phoneNumber))

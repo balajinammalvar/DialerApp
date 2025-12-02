@@ -138,7 +138,6 @@ fun DialerLayout(
             }
         }
 
-        // Dial pad
         DialPad(
             currentNumber = currentNumber,
             onDigit = onDigit,
@@ -470,56 +469,5 @@ fun DialPadKey(
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DialerLayoutPreview() {
-    val sampleSuggestions = listOf(
-        CallEntity(
-            1, "9876543210", System.currentTimeMillis(), "received",
-            duration = TODO(),
-            formattedDate = TODO(),
-            formattedTime = TODO(),
-            dayName = TODO()
-        ),
-        CallEntity(
-            2, "9123456789", System.currentTimeMillis(), "dialed",
-            duration = TODO(),
-            formattedDate = TODO(),
-            formattedTime = TODO(),
-            dayName = TODO()
-        ),
-    )
-    DialerLayout(
-        currentNumber = "91",
-        suggestions = sampleSuggestions,
-        onDigit = {},
-        onBackspace = {},
-        onClearAll = {},
-        onCall = {}
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DialPadPreview() {
-    DialPad(
-        currentNumber = "1234567890",
-        onDigit = {},
-        onBackspace = {},
-        onClearAll = {},
-        hasNumber = true
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DialPadKeyPreview() {
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        DialPadKey(number = "2", letters = "ABC", onClick = {})
-        DialPadKey(number = "0", letters = "+", onClick = {})
-        DialPadKey(number = "*", letters = "", onClick = {})
     }
 }

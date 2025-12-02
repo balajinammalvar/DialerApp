@@ -55,7 +55,9 @@ class CallHistoryViewModel(
     }
 
     fun updateDay(day: String) {
-        _uiState.update { it.copy(selectedDay = day) }
+        viewModelScope.launch(Dispatchers.Default) {
+            _uiState.update { it.copy(selectedDay = day) }
+        }
     }
 
     fun buildContactCacheForSnapshot(snapshotItems: List<CallEntity>) {

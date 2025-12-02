@@ -41,6 +41,6 @@ class ContactRepository(private val context: Context) {
                 )
             }
         }
-        emit(contacts)
+        emit(contacts.distinctBy { it.phoneNumber.replace("\\D".toRegex(), "") })
     }.flowOn(Dispatchers.IO)
 }

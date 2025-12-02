@@ -40,17 +40,17 @@ fun EmptyStateContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        val infiniteTransition = rememberInfiniteTransition(label = "flip")
+        val rotation by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(ANIMATION_DURATION),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "rotation"
+        )
         if (isInitialLoad) {
-            val infiniteTransition = rememberInfiniteTransition(label = "flip")
-            val rotation by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(ANIMATION_DURATION),
-                    repeatMode = RepeatMode.Restart
-                ),
-                label = "rotation"
-            )
             Icon(
                 imageVector = Icons.Default.SettingsPhone,
                 contentDescription = null,
@@ -63,7 +63,9 @@ fun EmptyStateContent(
             Icon(
                 imageVector = Icons.Default.SettingsPhone,
                 contentDescription = null,
-                modifier = Modifier.size(80.dp),
+                modifier = Modifier.size(80.dp).graphicsLayer(
+                    rotationZ = rotation
+                ),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = ICON_ALPHA)
             )
         }

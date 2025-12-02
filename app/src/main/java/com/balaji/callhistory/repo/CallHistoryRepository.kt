@@ -39,7 +39,6 @@ class CallHistoryRepository(private val context: Context) {
 
     fun getCallsForSuggestions(): Flow<List<CallEntity>> = flow {
         val calls = mutableListOf<CallEntity>()
-        val twoDaysAgo = System.currentTimeMillis() - java.util.concurrent.TimeUnit.DAYS.toMillis(2)
 
         withContext(Dispatchers.IO) {
             context.contentResolver.query(
@@ -51,8 +50,8 @@ class CallHistoryRepository(private val context: Context) {
                     CallLog.Calls.TYPE,
                     CallLog.Calls.DURATION
                 ),
-                "${CallLog.Calls.DATE} >= ?",
-                arrayOf(twoDaysAgo.toString()),
+                null,
+                null,
                 "${CallLog.Calls.DATE} DESC"
             )?.use { cursor ->
                 val idCol = cursor.getColumnIndexOrThrow(CallLog.Calls._ID)
