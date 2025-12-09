@@ -172,11 +172,44 @@ fun DialerLayout(
 fun getHighlightedNumber(number: String, currentNum: String): Pair<String, IntRange?> {
     if (currentNum.isEmpty() || currentNum.isBlank()) return Pair(number, null)
     
-    val cleanNumber = number.replace("[^\\d]".toRegex(), "")
+    val cleanNumber = number.replace("\\D".toRegex(), "")
     val startIndex = cleanNumber.indexOf(currentNum)
     val indices = if (startIndex >= 0) findFormattedIndices(number, startIndex, currentNum.length) else null
     val range = indices?.let { it.first until it.second }
     return Pair(number, range)
+}
+
+fun getHighlightedName(name: String, digits: String): IntRange? {
+    if (digits.isEmpty() || !digits.all { it.isDigit() }) return null
+    val nameLower = name.lowercase().replace("[^a-z]".toRegex(), "")
+    
+    for (i in 0..nameLower.length - digits.length) {
+        if (matchesT9AtPosition(nameLower, digits, i)) {
+            return i until (i + digits.length)
+        }
+    }
+    return null
+}
+
+private fun matchesT9AtPosition(name: String, digits: String, startPos: Int): Boolean {
+    for (i in digits.indices) {
+        val digit = digits[i]
+        val char = name.getOrNull(startPos + i) ?: return false
+        if (!charMatchesDigit(char, digit)) return false
+    }
+    return true
+}
+
+private fun charMatchesDigit(char: Char, digit: Char): Boolean = when(digit) {
+    '2' -> char in "abc"
+    '3' -> char in "def"
+    '4' -> char in "ghi"
+    '5' -> char in "jkl"
+    '6' -> char in "mno"
+    '7' -> char in "pqrs"
+    '8' -> char in "tuv"
+    '9' -> char in "wxyz"
+    else -> false
 }
 
 private fun findFormattedIndices(number: String, startIndex: Int, length: Int): Pair<Int, Int>? {
@@ -372,16 +405,40 @@ fun SuggestionCallRow(
             UiHelper.ContactAvatar(contactName = contactName)
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = contactName ?: call.number,
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (contactName != null) {
+                    val nameHighlight = getHighlightedName(contactName, currentNumber)
+                    val annotatedName = buildAnnotatedString {
+                        if (nameHighlight != null) {
+                            append(contactName.take(nameHighlight.first))
+                            withStyle(SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )) {
+                                append(contactName.substring(nameHighlight.first, nameHighlight.last))
+                            }
+                            append(contactName.substring(nameHighlight.last))
+                        } else {
+                            append(contactName)
+                        }
+                    }
+                    Text(
+                        text = annotatedName,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                } else {
+                    Text(
+                        text = call.number,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
                 if (contactName != null) {
                     val annotatedNumber = buildAnnotatedString {
                         if (highlightRange != null) {
                             append(number.substring(0, highlightRange.first))
-                            withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold)) {
+                            withStyle(SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )) {
                                 append(number.substring(highlightRange.first, highlightRange.last))
                             }
                             append(number.substring(highlightRange.last))
