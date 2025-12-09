@@ -20,12 +20,14 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -108,6 +110,10 @@ class MainActivity : ComponentActivity() {
             val currentTheme by darkModeState.state.collectAsState()
 
             AppTheme(darkTheme = currentTheme) {
+                SideEffect {
+                    WindowCompat.getInsetsController(window, window.decorView)
+                    .isAppearanceLightStatusBars = !currentTheme
+                }
                 val nav = rememberNavController()
                 val navBackStackEntry by nav.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route

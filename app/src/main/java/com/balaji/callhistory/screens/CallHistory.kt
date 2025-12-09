@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -162,7 +163,9 @@ fun CallHistoryLayout(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(
+                modifier = Modifier.width(LocalConfiguration.current.screenWidthDp.dp * 0.7f)
+            ) {
                 Text(
                     stringResource(R.string.settings),
                     modifier = Modifier.padding(16.dp),
@@ -170,7 +173,8 @@ fun CallHistoryLayout(
                 )
                 HorizontalDivider()
                 NavigationDrawerItem(
-                    icon = { Icon(if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode, contentDescription = null) },
+                    icon = { Icon(if (isDarkMode) Icons.Default.LightMode else
+                        Icons.Default.DarkMode, contentDescription = null) },
                     label = { Text(if (isDarkMode) "Light Mode" else "Dark Mode") },
                     selected = false,
                     onClick = {

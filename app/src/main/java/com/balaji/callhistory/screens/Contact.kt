@@ -6,6 +6,7 @@ import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,7 +36,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -247,8 +252,21 @@ fun ContactRow(contact: Contact, onClick: () -> Unit) {
 @Composable
 fun AlphabetScroller(modifier: Modifier = Modifier, onLetterClick: (Char) -> Unit) {
     val alphabet = ('A'..'Z').toList()
+    val letterPositions = remember { mutableMapOf<Char, Float>() }
+    
     Column(
-        modifier = modifier.padding(end = 4.dp),
+        modifier = modifier
+            .padding(end = 4.dp)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        findLetterAtPosition(offset.y, letterPositions)?.let { onLetterClick(it) }
+                    },
+                    onDrag = { change, _ ->
+                        findLetterAtPosition(change.position.y, letterPositions)?.let { onLetterClick(it) }
+                    }
+                )
+            },
         verticalArrangement = Arrangement.Center
     ) {
         alphabet.forEach { letter ->
@@ -256,12 +274,19 @@ fun AlphabetScroller(modifier: Modifier = Modifier, onLetterClick: (Char) -> Uni
                 text = letter.toString(),
                 modifier = Modifier
                     .clickable { onLetterClick(letter) }
-                    .padding(vertical = 2.dp, horizontal = 8.dp),
+                    .padding(vertical = 2.dp, horizontal = 8.dp)
+                    .onGloballyPositioned { coordinates ->
+                        letterPositions[letter] = coordinates.positionInParent().y + coordinates.size.height / 2f
+                    },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary
             )
         }
     }
+}
+
+private fun findLetterAtPosition(y: Float, positions: Map<Char, Float>): Char? {
+    return positions.minByOrNull { (_, pos) -> kotlin.math.abs(pos - y) }?.key
 }
 
 @Preview(showBackground = true)
