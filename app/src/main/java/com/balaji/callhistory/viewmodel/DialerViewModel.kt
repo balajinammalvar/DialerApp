@@ -15,7 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -56,7 +58,7 @@ class DialerViewModel(private val context: Context, private val repo: CallHistor
     val contactSuggestions: Flow<List<CallEntity>> = combine(
         callHistoryForSuggestions,
         _allContacts,
-        _uiState
+        _uiState.debounce(50)
     ) { calls, contacts, state ->
         if (state.currentNumber.isEmpty()) {
             val twoDaysAgo = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(TWO_DAYS)
@@ -88,7 +90,7 @@ class DialerViewModel(private val context: Context, private val repo: CallHistor
 
             (callMatches + contactMatches).distinctBy { it.number }.take(MAX_SEARCH_SUGGESTIONS)
         }
-    }
+    }.flowOn(Dispatchers.Default)
 
 
 

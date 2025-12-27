@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -387,8 +388,10 @@ fun SuggestionCallRow(
     onCallClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val contactName = ContactHelper.getContactName(context, call.number)
-    val (number, highlightRange) = getHighlightedNumber(call.number, currentNumber)
+    val contactName = remember(call.number) { ContactHelper.getContactName(context, call.number) }
+    val (number, highlightRange) = remember(call.number, currentNumber) { 
+        getHighlightedNumber(call.number, currentNumber) 
+    }
 
     Card(
         onClick = onRowClick,
@@ -406,19 +409,24 @@ fun SuggestionCallRow(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 if (contactName != null) {
-                    val nameHighlight = getHighlightedName(contactName, currentNumber)
-                    val annotatedName = buildAnnotatedString {
-                        if (nameHighlight != null) {
-                            append(contactName.take(nameHighlight.first))
-                            withStyle(SpanStyle(
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )) {
-                                append(contactName.substring(nameHighlight.first, nameHighlight.last))
+                    val nameHighlight = remember(contactName, currentNumber) { 
+                        getHighlightedName(contactName, currentNumber) 
+                    }
+                    val primaryColor = MaterialTheme.colorScheme.primary
+                    val annotatedName = remember(contactName, currentNumber, nameHighlight, primaryColor) {
+                        buildAnnotatedString {
+                            if (nameHighlight != null) {
+                                append(contactName.take(nameHighlight.first))
+                                withStyle(SpanStyle(
+                                    color = primaryColor,
+                                    fontWeight = FontWeight.Bold
+                                )) {
+                                    append(contactName.substring(nameHighlight.first, nameHighlight.last))
+                                }
+                                append(contactName.substring(nameHighlight.last))
+                            } else {
+                                append(contactName)
                             }
-                            append(contactName.substring(nameHighlight.last))
-                        } else {
-                            append(contactName)
                         }
                     }
                     Text(
@@ -432,18 +440,21 @@ fun SuggestionCallRow(
                     )
                 }
                 if (contactName != null) {
-                    val annotatedNumber = buildAnnotatedString {
-                        if (highlightRange != null) {
-                            append(number.substring(0, highlightRange.first))
-                            withStyle(SpanStyle(
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )) {
-                                append(number.substring(highlightRange.first, highlightRange.last))
+                    val primaryColor = MaterialTheme.colorScheme.primary
+                    val annotatedNumber = remember(number, currentNumber, highlightRange, primaryColor) {
+                        buildAnnotatedString {
+                            if (highlightRange != null) {
+                                append(number.substring(0, highlightRange.first))
+                                withStyle(SpanStyle(
+                                    color = primaryColor,
+                                    fontWeight = FontWeight.Bold
+                                )) {
+                                    append(number.substring(highlightRange.first, highlightRange.last))
+                                }
+                                append(number.substring(highlightRange.last))
+                            } else {
+                                append(number)
                             }
-                            append(number.substring(highlightRange.last))
-                        } else {
-                            append(number)
                         }
                     }
                     Text(

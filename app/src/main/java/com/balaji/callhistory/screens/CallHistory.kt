@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SettingsPhone
+import androidx.compose.material.icons.filled.Tty
 import androidx.compose.material3.Card
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
@@ -313,7 +314,7 @@ fun EmptyStateContent() {
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                imageVector = Icons.Default.SettingsPhone,
+                imageVector = Icons.Default.Tty,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp).graphicsLayer(
                     rotationZ = rotation
