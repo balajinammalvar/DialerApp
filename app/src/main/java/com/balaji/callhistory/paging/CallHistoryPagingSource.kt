@@ -7,7 +7,8 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.balaji.callhistory.data.CallEntity
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class CallHistoryPagingSource(
     private val context: Context,

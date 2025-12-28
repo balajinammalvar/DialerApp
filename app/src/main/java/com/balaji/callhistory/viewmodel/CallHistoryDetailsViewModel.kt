@@ -7,7 +7,8 @@ import com.balaji.callhistory.data.CallEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class CallHistoryDetailsViewModel(private val context: Context) : ViewModel() {
 

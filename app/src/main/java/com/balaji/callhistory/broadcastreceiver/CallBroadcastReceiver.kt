@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.telephony.TelephonyManager
 import android.util.Log
-import com.balaji.callhistory.MainActivity
 import com.balaji.callhistory.repo.AppRepositoryProvider
 
 class CallBroadcastReceiver : BroadcastReceiver() {

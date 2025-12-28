@@ -1,7 +1,9 @@
 package com.balaji.callhistory.utils
 
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 object DateHelper {
     fun getDateSection(timestamp: Long): String {

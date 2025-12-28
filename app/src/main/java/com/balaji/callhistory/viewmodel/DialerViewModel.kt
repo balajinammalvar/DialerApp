@@ -3,11 +3,9 @@ package com.balaji.callhistory.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import java.util.concurrent.TimeUnit
 import com.balaji.callhistory.data.CallEntity
 import com.balaji.callhistory.repo.CallHistoryRepository
 import com.balaji.callhistory.utils.ContactHelper
-import com.balaji.callhistory.utils.SearchHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +19,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
 
 data class DialerUiState(
     val currentNumber: String = "",
