@@ -6,18 +6,13 @@ import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.balaji.callhistory.data.CallEntity
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.balaji.callhistory.utils.CallTypeMapper
+import com.balaji.callhistory.utils.DateFormatterHelper
 
 class CallHistoryPagingSource(
     private val context: Context,
     private val callTypeFilter: String = "all"
 ) : PagingSource<Int, CallEntity>() {
-
-    private val dateHeaderFormatter = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-    private val timeFormatter = SimpleDateFormat("hh:mm a dd-MMM-yy", Locale.getDefault())
-    private val dayFormatter = SimpleDateFormat("EEEE", Locale.getDefault())
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, CallEntity> {
         return try {
@@ -25,9 +20,9 @@ class CallHistoryPagingSource(
             val limit = params.loadSize
 
             val selection = when (callTypeFilter) {
-                "missed" -> "${CallLog.Calls.TYPE} = ${CallLog.Calls.MISSED_TYPE}"
-                "received" -> "${CallLog.Calls.TYPE} = ${CallLog.Calls.INCOMING_TYPE}"
-                "dialed" -> "${CallLog.Calls.TYPE} = ${CallLog.Calls.OUTGOING_TYPE}"
+                CallTypeMapper.TYPE_MISSED   -> "${CallLog.Calls.TYPE} = ${CallLog.Calls.MISSED_TYPE}"
+                CallTypeMapper.TYPE_RECEIVED -> "${CallLog.Calls.TYPE} = ${CallLog.Calls.INCOMING_TYPE}"
+                CallTypeMapper.TYPE_DIALED   -> "${CallLog.Calls.TYPE} = ${CallLog.Calls.OUTGOING_TYPE}"
                 else -> null
             }
 
@@ -46,68 +41,44 @@ class CallHistoryPagingSource(
                 null,
                 "${CallLog.Calls.DATE} DESC"
             )?.use { cursor ->
-                val idCol = cursor.getColumnIndexOrThrow(CallLog.Calls._ID)
-                val numberCol = cursor.getColumnIndexOrThrow(CallLog.Calls.NUMBER)
-                val dateCol = cursor.getColumnIndexOrThrow(CallLog.Calls.DATE)
-                val typeCol = cursor.getColumnIndexOrThrow(CallLog.Calls.TYPE)
+                val idCol       = cursor.getColumnIndexOrThrow(CallLog.Calls._ID)
+                val numberCol   = cursor.getColumnIndexOrThrow(CallLog.Calls.NUMBER)
+                val dateCol     = cursor.getColumnIndexOrThrow(CallLog.Calls.DATE)
+                val typeCol     = cursor.getColumnIndexOrThrow(CallLog.Calls.TYPE)
                 val durationCol = cursor.getColumnIndexOrThrow(CallLog.Calls.DURATION)
 
                 var currentIndex = 0
                 while (cursor.moveToNext()) {
-                    if (currentIndex < offset) {
-                        currentIndex++
-                        continue
-                    }
+                    if (currentIndex < offset) { currentIndex++; continue }
+                    if (currentIndex >= offset + limit) break
 
-                    if (currentIndex >= offset + limit) {
-                        break
-                    }
-                    val id = cursor.getLong(idCol)
-                    val number = cursor.getString(numberCol) ?: "Unknown"
                     val ts = cursor.getLong(dateCol)
-                    val typeInt = cursor.getInt(typeCol)
-                    val duration = cursor.getLong(durationCol)
-
-                    val callType = when (typeInt) {
-                        CallLog.Calls.OUTGOING_TYPE -> "dialed"
-                        CallLog.Calls.INCOMING_TYPE -> "received"
-                        CallLog.Calls.MISSED_TYPE -> "missed"
-                        else -> "unknown"
-                    }
-
-                    val d = Date(ts)
-                    val formattedDate = dateHeaderFormatter.format(d)
-                    val formattedTime = timeFormatter.format(d)
-                    val dayName = dayFormatter.format(d)
-
                     calls.add(
                         CallEntity(
-                            id = id,
-                            number = number,
-                            timestamp = ts,
-                            callType = callType,
-                            duration = duration,
-                            formattedDate = formattedDate,
-                            formattedTime = formattedTime,
-                            dayName = dayName
+                            id            = cursor.getLong(idCol),
+                            number        = cursor.getString(numberCol) ?: "Unknown",
+                            timestamp     = ts,
+                            callType      = CallTypeMapper.fromInt(cursor.getInt(typeCol)),
+                            duration      = cursor.getLong(durationCol),
+                            formattedDate = DateFormatterHelper.formatDateHeader(ts),
+                            formattedTime = DateFormatterHelper.formatTimeWithDate(ts),
+                            dayName       = DateFormatterHelper.formatDayName(ts)
                         )
                     )
-
                     currentIndex++
                 }
             }
             Log.d("CallHistory", "Call List Size : ${calls.size}, offset : ${params.key}, Limit : ${params.loadSize}")
             LoadResult.Page(
-                data = calls,
-                prevKey = if (offset == 0) null else offset - limit,
-                nextKey = if (calls.size < limit) null else offset + limit
+                data     = calls,
+                prevKey  = if (offset == 0) null else offset - limit,
+                nextKey  = if (calls.size < limit) null else offset + limit
             )
         } catch (e: Exception) {
             LoadResult.Error(e)
         }
     }
 
-    override fun getRefreshKey(state: PagingState<Int, CallEntity>): Int? {
-        return state.anchorPosition
-    }
+    override fun getRefreshKey(state: PagingState<Int, CallEntity>): Int? =
+        state.anchorPosition
 }

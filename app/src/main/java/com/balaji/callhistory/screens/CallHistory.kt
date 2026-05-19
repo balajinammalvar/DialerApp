@@ -22,9 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.CallMade
-import androidx.compose.material.icons.automirrored.filled.CallReceived
-import androidx.compose.material.icons.automirrored.filled.PhoneMissed
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.DarkMode
@@ -72,16 +69,21 @@ import androidx.paging.compose.itemKey
 import com.balaji.callhistory.R
 import com.balaji.callhistory.analytics.AnalyticsManager
 import com.balaji.callhistory.data.CallEntity
+import com.balaji.callhistory.data.ContactDisplayInfo
 import com.balaji.callhistory.repo.AppRepositoryProvider
 import com.balaji.callhistory.ui.components.PermissionHandler
 import com.balaji.callhistory.ui.components.SearchBar
 import com.balaji.callhistory.utils.CallHelper
-import com.balaji.callhistory.utils.ContactHelper
+import com.balaji.callhistory.utils.CallTypeMapper
 import com.balaji.callhistory.utils.DarkModeState
 import com.balaji.callhistory.utils.UiHelper
 import com.balaji.callhistory.viewmodel.CallHistoryViewModel
 import kotlinx.coroutines.launch
-import java.util.Locale
+
+// Constant — never recreated on recomposition
+private val DAYS_OF_WEEK = listOf(
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+)
 
 @Composable
 fun CallHistoryScreen(
@@ -114,13 +116,9 @@ fun CallHistoryScreen(
             onUpdateContactCache = { calls ->
                 viewModel.buildContactCacheForSnapshot(calls)
             },
-            onCallDetailsClick = { number ->
-                onNavigateToDetails(number)
-            },
+            onCallDetailsClick = { number -> onNavigateToDetails(number) },
             onNavigateToTheme = onNavigateToTheme,
-            onMakeCall = { number ->
-                CallHelper.makeCall(context, number)
-            }
+            onMakeCall = { number -> CallHelper.makeCall(context, number) }
         )
     }
 }
@@ -129,7 +127,7 @@ fun CallHistoryScreen(
 fun CallHistoryLayout(
     pagingData: LazyPagingItems<CallEntity>,
     uiState: com.balaji.callhistory.viewmodel.DialerUiStates,
-    contactCache: Map<String, String?>,
+    contactCache: Map<String, ContactDisplayInfo>,
     onSearchChange: (String) -> Unit,
     onFilterChange: (String) -> Unit,
     onDayChange: (String) -> Unit,
@@ -140,10 +138,14 @@ fun CallHistoryLayout(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    AnalyticsManager.logAnalyticEvent(
-        context = context,
-        eventType = AnalyticsManager.TrackingEvent.ENTERED_CALL_HISTORY
-    )
+
+    // Analytics fired once on entry, not on every recomposition
+    LaunchedEffect(Unit) {
+        AnalyticsManager.logAnalyticEvent(
+            context = context,
+            eventType = AnalyticsManager.TrackingEvent.ENTERED_CALL_HISTORY
+        )
+    }
 
     LaunchedEffect(pagingData.itemCount) {
         val items = (0 until pagingData.itemCount).mapNotNull { pagingData.peek(it) }
@@ -172,19 +174,25 @@ fun CallHistoryLayout(
                 )
                 HorizontalDivider()
                 NavigationDrawerItem(
-                    icon = { Icon(if (isDarkMode) Icons.Default.LightMode else
-                        Icons.Default.DarkMode, contentDescription = null) },
-                    label = { Text(if (isDarkMode) "Light Mode" else "Dark Mode") },
+                    icon = {
+                        Icon(
+                            if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                            contentDescription = null
+                        )
+                    },
+                    label = {
+                        Text(
+                            if (isDarkMode) stringResource(R.string.theme_light_mode)
+                            else stringResource(R.string.theme_dark_mode)
+                        )
+                    },
                     selected = false,
-                    onClick = {
-                        darkModeState.state.value = !isDarkMode
-                    }
+                    onClick = { darkModeState.state.value = !isDarkMode }
                 )
             }
         }
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Search Bar (same as your original)
             SearchBar(
                 searchQuery = uiState.searchQuery,
                 onSearchChange = onSearchChange,
@@ -199,7 +207,6 @@ fun CallHistoryLayout(
 
             Spacer(Modifier.height(8.dp))
 
-            // Filter chips + Day selector (horizontal scroll)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -214,18 +221,18 @@ fun CallHistoryLayout(
                 )
                 FilterButton(
                     text = stringResource(R.string.missed),
-                    selected = uiState.selectedFilter == "missed",
-                    onClick = { onFilterChange("missed") }
+                    selected = uiState.selectedFilter == CallTypeMapper.TYPE_MISSED,
+                    onClick = { onFilterChange(CallTypeMapper.TYPE_MISSED) }
                 )
                 FilterButton(
                     text = stringResource(R.string.received),
-                    selected = uiState.selectedFilter == "received",
-                    onClick = { onFilterChange("received") }
+                    selected = uiState.selectedFilter == CallTypeMapper.TYPE_RECEIVED,
+                    onClick = { onFilterChange(CallTypeMapper.TYPE_RECEIVED) }
                 )
                 FilterButton(
                     text = stringResource(R.string.dialed),
-                    selected = uiState.selectedFilter == "dialed",
-                    onClick = { onFilterChange("dialed") }
+                    selected = uiState.selectedFilter == CallTypeMapper.TYPE_DIALED,
+                    onClick = { onFilterChange(CallTypeMapper.TYPE_DIALED) }
                 )
                 DaySplitButton(
                     selectedDay = uiState.selectedDay,
@@ -243,54 +250,57 @@ fun CallHistoryLayout(
                         count = pagingData.itemCount,
                         key = pagingData.itemKey { it.callHistoryId }
                     ) { index ->
-                    val call = pagingData[index] ?: return@items
+                        val call = pagingData[index] ?: return@items
 
-                    val showHeader = (index == 0) ||
-                            (pagingData.peek(index - 1)?.formattedDate != call.formattedDate)
-                    if (showHeader) {
-                        Text(
-                            text = call.formattedDate,
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surface)
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        val showHeader = (index == 0) ||
+                                (pagingData.peek(index - 1)?.formattedDate != call.formattedDate)
+                        if (showHeader) {
+                            Text(
+                                text = call.formattedDate,
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+
+                        // Both name and photoUri from cache — NO UI-thread ContentResolver call
+                        val contactInfo = contactCache[call.number]
+                        val contactName = contactInfo?.name
+                        val contactPhotoUri = contactInfo?.photoUri
+
+                        // Use CallTypeMapper — no duplicate when() block
+                        val callIcon: ImageVector = CallTypeMapper.toIcon(call.callType)
+                        val iconTint = CallTypeMapper.tintColor(
+                            call.callType,
+                            MaterialTheme.colorScheme.primary
+                        )
+                        val timeStampColor = CallTypeMapper.tintColor(
+                            call.callType,
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        CallRow(
+                            phoneNumber = call.number,
+                            contactName = contactName,
+                            contactPhotoUri = contactPhotoUri,
+                            callTypeIcon = callIcon,
+                            callTypeIconColor = iconTint,
+                            timeStampColor = timeStampColor,
+                            formattedTime = call.formattedTime,
+                            onCallDetailsClick = { onCallDetailsClick(call.number) },
+                            onMakeCall = { onMakeCall(call.number) }
                         )
                     }
-
-                    val contactName = contactCache[call.number]
-                    val contactPhotoUri = ContactHelper.getContactPhotoUri(context, call.number)
-
-                    val callIcon: ImageVector =
-                        when (call.callType.lowercase(Locale.getDefault())) {
-                            "missed" -> Icons.AutoMirrored.Filled.PhoneMissed
-                            "received" -> Icons.AutoMirrored.Filled.CallReceived
-                            "dialed" -> Icons.AutoMirrored.Filled.CallMade
-                            else -> Icons.AutoMirrored.Filled.CallReceived
-                        }
-                    val iconTint =
-                        if (call.callType == "missed") Color.Red else MaterialTheme.colorScheme.primary
-                    val timeStampColor =
-                        if (call.callType == "missed") Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
-
-                    CallRow(
-                        phoneNumber = call.number,
-                        contactName = contactName,
-                        contactPhotoUri = contactPhotoUri,
-                        callTypeIcon = callIcon,
-                        callTypeIconColor = iconTint,
-                        timeStampColor = timeStampColor,
-                        formattedTime = call.formattedTime,
-                        onCallDetailsClick = { onCallDetailsClick(call.number) },
-                        onMakeCall = { onMakeCall(call.number) }
-                    )
                 }
-            }
             }
         }
     }
 }
+
 private const val ANIMATION_DURATION = 1500
+
 @Composable
 fun EmptyStateContent() {
     Box(
@@ -314,14 +324,12 @@ fun EmptyStateContent() {
             Icon(
                 imageVector = Icons.Default.Tty,
                 contentDescription = null,
-                modifier = Modifier.size(64.dp).graphicsLayer(
-                    rotationZ = rotation
-                ),
+                modifier = Modifier.size(64.dp).graphicsLayer(rotationZ = rotation),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
             Spacer(Modifier.height(16.dp))
             Text(
-                text = "No call history",
+                text = stringResource(R.string.empty_no_call_history),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -330,25 +338,14 @@ fun EmptyStateContent() {
 }
 
 @Composable
-fun FilterButton(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    FilterChip(
-        onClick = onClick,
-        label = { Text(text) },
-        selected = selected
-    )
+fun FilterButton(text: String, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(onClick = onClick, label = { Text(text) }, selected = selected)
 }
 
 @Composable
-fun DaySplitButton(
-    selectedDay: String,
-    onDaySelected: (String) -> Unit
-) {
+fun DaySplitButton(selectedDay: String, onDaySelected: (String) -> Unit) {
     var isExpanded by remember { mutableStateOf(false) }
-    val days = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+    // DAYS_OF_WEEK is a file-level constant — never recreated on recomposition
 
     Box {
         FilterChip(
@@ -365,24 +362,15 @@ fun DaySplitButton(
             },
             selected = selectedDay != "all"
         )
-        DropdownMenu(
-            expanded = isExpanded,
-            onDismissRequest = { isExpanded = false }
-        ) {
+        DropdownMenu(expanded = isExpanded, onDismissRequest = { isExpanded = false }) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.all_days)) },
-                onClick = {
-                    isExpanded = false
-                    onDaySelected("all")
-                }
+                onClick = { isExpanded = false; onDaySelected("all") }
             )
-            days.forEach { day ->
+            DAYS_OF_WEEK.forEach { day ->
                 DropdownMenuItem(
                     text = { Text(day) },
-                    onClick = {
-                        isExpanded = false
-                        onDaySelected(day)
-                    }
+                    onClick = { isExpanded = false; onDaySelected(day) }
                 )
             }
         }
@@ -413,19 +401,14 @@ fun CallRow(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            UiHelper.ContactAvatar(
-                contactName = contactName,
-                photoUri = contactPhotoUri
-            )
-
+            UiHelper.ContactAvatar(contactName = contactName, photoUri = contactPhotoUri)
             Spacer(modifier = Modifier.width(16.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 UiHelper.ContactInfo(contactName, phoneNumber)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = callTypeIcon,
-                        contentDescription = "callType",
+                        contentDescription = stringResource(R.string.cd_call_type),
                         tint = callTypeIconColor,
                         modifier = Modifier.size(16.dp)
                     )
@@ -437,9 +420,8 @@ fun CallRow(
                     )
                 }
             }
-
             IconButton(onClick = { onMakeCall(phoneNumber) }) {
-                Icon(Icons.Default.Call, contentDescription = "Call")
+                Icon(Icons.Default.Call, contentDescription = stringResource(R.string.cd_call))
             }
         }
     }
@@ -452,7 +434,7 @@ fun CallRowPreview() {
         Column {
             CallRow(
                 phoneNumber = "+1234567890",
-                callTypeIcon = Icons.AutoMirrored.Filled.CallReceived,
+                callTypeIcon = CallTypeMapper.ICON_RECEIVED,
                 callTypeIconColor = MaterialTheme.colorScheme.primary,
                 timeStampColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 formattedTime = "10:30 AM",
@@ -463,7 +445,7 @@ fun CallRowPreview() {
             )
             CallRow(
                 phoneNumber = "+9876543210",
-                callTypeIcon = Icons.AutoMirrored.Filled.PhoneMissed,
+                callTypeIcon = CallTypeMapper.ICON_MISSED,
                 callTypeIconColor = Color.Red,
                 timeStampColor = Color.Red,
                 formattedTime = "09:15 AM",
@@ -474,7 +456,7 @@ fun CallRowPreview() {
             )
             CallRow(
                 phoneNumber = "+1122334455",
-                callTypeIcon = Icons.AutoMirrored.Filled.CallMade,
+                callTypeIcon = CallTypeMapper.ICON_DIALED,
                 callTypeIconColor = MaterialTheme.colorScheme.primary,
                 timeStampColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 formattedTime = "Yesterday",
@@ -486,4 +468,3 @@ fun CallRowPreview() {
         }
     }
 }
-

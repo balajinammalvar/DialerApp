@@ -26,6 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -139,10 +140,13 @@ fun ContactLayout(
     onContactClick: (Contact) -> Unit
 ) {
     val context = LocalContext.current
-    AnalyticsManager.logAnalyticEvent(
-        context = context,
-        eventType = AnalyticsManager.TrackingEvent.ENTER_CONTACT_SEARCH
-    )
+    // Analytics fired once on entry, not on every recomposition
+    LaunchedEffect(Unit) {
+        AnalyticsManager.logAnalyticEvent(
+            context = context,
+            eventType = AnalyticsManager.TrackingEvent.ENTER_CONTACT_SEARCH
+        )
+    }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 

@@ -19,6 +19,8 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.balaji.callhistory.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -184,10 +186,10 @@ private fun BottomAppBar(currentRoute: String?, nav: NavHostController) {
             icon = {
                 Icon(
                     Icons.Default.Home,
-                    contentDescription = "History"
+                    contentDescription = stringResource(R.string.nav_home)
                 )
             },
-            label = { Text("Home") },
+            label = { Text(stringResource(R.string.nav_home)) },
             selected = currentRoute?.contains("HistoryRoute") == true,
             onClick = {
                 nav.navigate(HistoryRoute) {
@@ -200,10 +202,10 @@ private fun BottomAppBar(currentRoute: String?, nav: NavHostController) {
             icon = {
                 Icon(
                     Icons.Default.Dialpad,
-                    contentDescription = "Dialer"
+                    contentDescription = stringResource(R.string.nav_dialer)
                 )
             },
-            label = { Text("Dialer") },
+            label = { Text(stringResource(R.string.nav_dialer)) },
             selected = currentRoute?.contains("DialerRoute") == true,
             onClick = {
                 nav.navigate(DialerRoute) {
@@ -219,10 +221,10 @@ private fun BottomAppBar(currentRoute: String?, nav: NavHostController) {
             icon = {
                 Icon(
                     Icons.Default.Contacts,
-                    contentDescription = "Contacts"
+                    contentDescription = stringResource(R.string.nav_contacts)
                 )
             },
-            label = { Text("Contacts") },
+            label = { Text(stringResource(R.string.nav_contacts)) },
             selected = currentRoute?.contains("ContactsRoute") == true,
             onClick = {
                 nav.navigate(ContactsRoute) {

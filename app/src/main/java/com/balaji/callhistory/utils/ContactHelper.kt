@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.ContactsContract
 import androidx.core.content.ContextCompat
+import com.balaji.callhistory.data.ContactDisplayInfo
 
 object ContactHelper {
     data class Contact(val name: String, val phoneNumber: String)
@@ -34,6 +35,35 @@ object ContactHelper {
             }
         }
         return contacts
+    }
+
+    /**
+     * Resolves both contact name and photo URI for [phoneNumber] in a
+     * **single** ContentResolver query. Prefer this over the separate
+     * [getContactName] + [getContactPhotoUri] calls to halve DB lookups.
+     */
+    fun getContactInfo(context: Context, phoneNumber: String): ContactDisplayInfo {
+        if (!hasContactsPermission(context)) return ContactDisplayInfo.EMPTY
+        val uri = Uri.withAppendedPath(
+            ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+            Uri.encode(phoneNumber)
+        )
+        val cursor = context.contentResolver.query(
+            uri,
+            arrayOf(
+                ContactsContract.PhoneLookup.DISPLAY_NAME,
+                ContactsContract.PhoneLookup.PHOTO_URI
+            ),
+            null, null, null
+        )
+        return cursor?.use {
+            if (it.moveToFirst()) {
+                ContactDisplayInfo(
+                    name = it.getString(it.getColumnIndexOrThrow(ContactsContract.PhoneLookup.DISPLAY_NAME)),
+                    photoUri = it.getString(it.getColumnIndexOrThrow(ContactsContract.PhoneLookup.PHOTO_URI))
+                )
+            } else ContactDisplayInfo.EMPTY
+        } ?: ContactDisplayInfo.EMPTY
     }
 
     fun getContactName(context: Context, phoneNumber: String): String? {

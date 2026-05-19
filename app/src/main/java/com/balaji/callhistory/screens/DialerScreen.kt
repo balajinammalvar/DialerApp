@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -99,10 +100,13 @@ fun DialerLayout(
     onCall: () -> Unit
 ) {
     val context = LocalContext.current
-    AnalyticsManager.logAnalyticEvent(
-        context = context,
-        eventType = AnalyticsManager.TrackingEvent.ENTERED_DIALER_SCREEN
-    )
+    // Analytics fired once on entry, not on every recomposition
+    LaunchedEffect(Unit) {
+        AnalyticsManager.logAnalyticEvent(
+            context = context,
+            eventType = AnalyticsManager.TrackingEvent.ENTERED_DIALER_SCREEN
+        )
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()

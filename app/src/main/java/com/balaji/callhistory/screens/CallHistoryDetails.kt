@@ -27,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -34,9 +35,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.balaji.callhistory.R
 import com.balaji.callhistory.analytics.AnalyticsManager
 import com.balaji.callhistory.data.CallEntity
 import com.balaji.callhistory.utils.CallHelper
@@ -55,12 +58,14 @@ fun CallHistoryDetailsScreen(
     val context = LocalContext.current
     val callEntryList by viewModel.getCallHistoryForNumber(phoneNumber).collectAsState(initial = emptyList())
     val contactName = remember(phoneNumber) { ContactHelper.getContactName(context, phoneNumber) }
-    val photoUri =
-        remember(phoneNumber) { ContactHelper.getContactPhotoUri(context, phoneNumber) }
-    AnalyticsManager.logAnalyticEvent(
-        context = context,
-        eventType = AnalyticsManager.TrackingEvent.ENTERED_CALL_HISTORY_DETAILS
-    )
+    val photoUri = remember(phoneNumber) { ContactHelper.getContactPhotoUri(context, phoneNumber) }
+    // Analytics fired once on entry, not on every recomposition
+    LaunchedEffect(Unit) {
+        AnalyticsManager.logAnalyticEvent(
+            context = context,
+            eventType = AnalyticsManager.TrackingEvent.ENTERED_CALL_HISTORY_DETAILS
+        )
+    }
 
     CallHistoryDetailsLayout(
         phoneNumber = phoneNumber,
@@ -87,10 +92,10 @@ fun CallHistoryDetailsLayout(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Call details") },
+                title = { Text(stringResource(R.string.title_call_details)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 }
             )
@@ -98,7 +103,7 @@ fun CallHistoryDetailsLayout(
         floatingActionButton = {
             AnimatedVisibility(visible = !callHistoryItemState.isScrollInProgress) {
                 FloatingActionButton(onClick = onCallClick) {
-                    Icon(Icons.Default.Call, contentDescription = "Call")
+                    Icon(Icons.Default.Call, contentDescription = stringResource(R.string.cd_call))
                 }
             }
         }
@@ -160,13 +165,13 @@ fun CallHistoryItem(callEntity: CallEntity) {
         if (callEntity.callType == "missed") Color.Red else MaterialTheme.colorScheme.primary
     val timeStampColor =
         if (callEntity.callType == "missed") Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
-    
+
     val durationText = if (callEntity.duration >= 60) {
         val minutes = callEntity.duration / 60
         val seconds = callEntity.duration % 60
-        "${minutes}m ${seconds}s"
+        stringResource(R.string.duration_minutes_seconds, minutes, seconds)
     } else {
-        "${callEntity.duration}s"
+        stringResource(R.string.duration_seconds, callEntity.duration)
     }
     
     Row(

@@ -17,13 +17,18 @@ class CallHistoryApplication : Application() {
         // Load theme early in application startup
         CoroutineScope(Dispatchers.IO).launch {
             val themeMode = ThemePreferences.getThemeMode(this@CallHistoryApplication).first()
-            
             val darkModeState = DarkModeState.getInstance()
             darkModeState.state.value = when (themeMode) {
                 "light" -> false
                 "dark" -> true
-                else -> false // Default to light for system until MainActivity resolves it
+                else -> false
             }
         }
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        // Unregister the ContentObserver to prevent leaks
+        AppRepositoryProvider.repository?.release()
     }
 }

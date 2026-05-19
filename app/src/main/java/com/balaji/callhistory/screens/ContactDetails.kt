@@ -2,6 +2,7 @@ package com.balaji.callhistory.screens
 
 import android.content.Intent
 import android.net.Uri
+import com.balaji.callhistory.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -36,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -49,17 +52,20 @@ fun ContactDetailsScreen(contactId: Long, onBackClick: () -> Unit) {
     val repository = remember { com.balaji.callhistory.repo.ContactRepository(context) }
     val contacts by repository.getAllContacts().collectAsState(initial = emptyList())
     val contact = contacts.find { it.id == contactId } ?: return
-    AnalyticsManager.logAnalyticEvent(
-        context = context,
-        eventType = AnalyticsManager.TrackingEvent.ENTERED_CONTACT_DETAILS
-    )
+    // Analytics fired once on entry, not on every recomposition
+    LaunchedEffect(Unit) {
+        AnalyticsManager.logAnalyticEvent(
+            context = context,
+            eventType = AnalyticsManager.TrackingEvent.ENTERED_CONTACT_DETAILS
+        )
+    }
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Contact Details") },
+                title = { Text(stringResource(R.string.title_contact_details)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 }
             )
@@ -77,7 +83,7 @@ fun ContactDetailsScreen(contactId: Long, onBackClick: () -> Unit) {
             if (contact.photoUri != null) {
                 AsyncImage(
                     model = contact.photoUri,
-                    contentDescription = "Contact photo",
+                    contentDescription = stringResource(R.string.cd_contact_photo),
                     modifier = Modifier
                         .size(120.dp)
                         .clip(CircleShape),
@@ -128,7 +134,7 @@ fun ContactDetailsScreen(contactId: Long, onBackClick: () -> Unit) {
                         context.startActivity(intent)
                     }
                 ) {
-                    Icon(Icons.Default.Call, contentDescription = "Call")
+                    Icon(Icons.Default.Call, contentDescription = stringResource(R.string.cd_call))
                 }
 
                 FloatingActionButton(
@@ -137,7 +143,7 @@ fun ContactDetailsScreen(contactId: Long, onBackClick: () -> Unit) {
                         context.startActivity(intent)
                     }
                 ) {
-                    Icon(Icons.Default.Message, contentDescription = "Message")
+                    Icon(Icons.Default.Message, contentDescription = stringResource(R.string.cd_message))
                 }
             }
         }

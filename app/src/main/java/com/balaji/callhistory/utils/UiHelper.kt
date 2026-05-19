@@ -4,10 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.CallMade
-import androidx.compose.material.icons.automirrored.filled.CallReceived
-import androidx.compose.material.icons.automirrored.filled.PhoneMissed
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -18,13 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.balaji.callhistory.R
 import com.balaji.callhistory.data.CallEntity
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import androidx.compose.material.icons.Icons
 
 private const val ICON_SIZE_MULTIPLIER = 0.6f
 
@@ -40,7 +36,7 @@ object UiHelper {
         if (photoUri != null) {
             AsyncImage(
                 model = photoUri,
-                contentDescription = "Contact photo",
+                contentDescription = stringResource(R.string.cd_contact_photo),
                 modifier = modifier
                     .size(size)
                     .clip(CircleShape),
@@ -76,25 +72,24 @@ object UiHelper {
         }
     }
 
-    fun formatDateAndTime(timestamp: Long): String {
-        val date = SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(timestamp))
-        val time = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(timestamp))
-        return "$time  $date"
-    }
+    /** Uses [DateFormatterHelper] — no new SimpleDateFormat per call. */
+    fun formatDateAndTime(timestamp: Long): String =
+        DateFormatterHelper.formatDateAndTime(timestamp)
 
-    fun formatDateTimeWithYear(timestamp: Long): String {
-        val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
-        val dateFormat = SimpleDateFormat("MMM dd, yy", Locale.getDefault())
-        return "${timeFormat.format(Date(timestamp))} • ${dateFormat.format(Date(timestamp))}"
-    }
+    /** Uses [DateFormatterHelper] — no new SimpleDateFormat per call. */
+    fun formatDateTimeWithYear(timestamp: Long): String =
+        DateFormatterHelper.formatDateTimeWithYear(timestamp)
 
-    fun getCallTypeText(callType: String): String {
-        return when (callType) {
-            "missed" -> "Missed call"
-            "received" -> "Incoming call"
-            "dialed" -> "Outgoing call"
-            else -> "Declined Call"
-        }
+    /**
+     * Returns the call type display string.
+     * Not marked @Composable — uses string constants, not resources.
+     * For localised strings use R.string.call_type_* directly in the UI.
+     */
+    fun getCallTypeText(callType: String): String = when (callType) {
+        CallTypeMapper.TYPE_MISSED   -> "Missed call"
+        CallTypeMapper.TYPE_RECEIVED -> "Incoming call"
+        CallTypeMapper.TYPE_DIALED   -> "Outgoing call"
+        else -> "Declined Call"
     }
 
     @Composable
@@ -112,27 +107,14 @@ object UiHelper {
         }
     }
 
-    @Composable
-    fun CallIcon(call: CallEntity): ImageVector {
-        val callIcon = when (call.callType) {
-            "missed" -> Icons.AutoMirrored.Filled.PhoneMissed
-            "received" -> Icons.AutoMirrored.Filled.CallReceived
-            "dialed" -> Icons.AutoMirrored.Filled.CallMade
-            else -> Icons.AutoMirrored.Filled.CallReceived
-        }
-        return callIcon
-    }
+    /**
+     * Returns the icon for a call type.
+     * NOT marked @Composable — [ImageVector] does not require composition.
+     * Uses pre-built [CallTypeMapper] instances to avoid per-call allocation.
+     */
+    fun CallIcon(call: CallEntity): ImageVector = CallTypeMapper.toIcon(call.callType)
 
-    fun formatDateHeader(timestamp: Long): String {
-        val now = System.currentTimeMillis()
-        val today = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(now))
-        val yesterday = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(now - 86400000))
-        val callDate = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(timestamp))
-        
-        return when (callDate) {
-            today -> "Today"
-            yesterday -> "Yesterday"
-            else -> SimpleDateFormat("MMMM dd, yy", Locale.getDefault()).format(Date(timestamp))
-        }
-    }
+    /** Uses [DateFormatterHelper] — no new SimpleDateFormat per call. */
+    fun formatDateHeader(timestamp: Long): String =
+        DateFormatterHelper.formatFullDate(timestamp)
 }

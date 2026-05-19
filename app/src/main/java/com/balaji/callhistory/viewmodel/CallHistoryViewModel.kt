@@ -7,6 +7,7 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.filter
 import com.balaji.callhistory.data.CallEntity
+import com.balaji.callhistory.data.ContactDisplayInfo
 import com.balaji.callhistory.repo.CallHistoryRepository
 import com.balaji.callhistory.utils.ContactHelper
 import kotlinx.coroutines.Dispatchers
@@ -36,10 +37,15 @@ class CallHistoryViewModel(
 
     private val _uiState = MutableStateFlow(DialerUiStates())
     val uiState: StateFlow<DialerUiStates> = _uiState.asStateFlow()
-    
-    private val _contactCache = MutableStateFlow<Map<String, String?>>(emptyMap())
-    val contactCache: StateFlow<Map<String, String?>> = _contactCache.asStateFlow()
-    
+
+    /**
+     * Caches [ContactDisplayInfo] (name + photo URI) per phone number.
+     * Built via [buildContactCacheForSnapshot] using a single ContentResolver
+     * query per number instead of two separate calls.
+     */
+    private val _contactCache = MutableStateFlow<Map<String, ContactDisplayInfo>>(emptyMap())
+    val contactCache: StateFlow<Map<String, ContactDisplayInfo>> = _contactCache.asStateFlow()
+
     val callHistoryPagingData: Flow<PagingData<CallEntity>> = combine(
         _uiState,
         repository.refreshTrigger
@@ -66,13 +72,18 @@ class CallHistoryViewModel(
         }
     }
 
+    /**
+     * Fetches [ContactDisplayInfo] for each unique number in [snapshotItems]
+     * using a single ContentResolver query per number (name + photo URI together)
+     * and merges the results into [_contactCache].
+     */
     fun buildContactCacheForSnapshot(snapshotItems: List<CallEntity>) {
         viewModelScope.launch {
-            val cache = mutableMapOf<String, String?>()
+            val cache = mutableMapOf<String, ContactDisplayInfo>()
             withContext(Dispatchers.IO) {
                 snapshotItems.forEach { call ->
                     if (!cache.containsKey(call.number)) {
-                        cache[call.number] = ContactHelper.getContactName(context, call.number)
+                        cache[call.number] = ContactHelper.getContactInfo(context, call.number)
                     }
                 }
             }
@@ -82,17 +93,17 @@ class CallHistoryViewModel(
 
     private fun matchesUiFilters(call: CallEntity): Boolean {
         val state = _uiState.value
-        
+
         if (state.searchQuery.isNotBlank()) {
             val q = state.searchQuery.trim()
-            val name = _contactCache.value[call.number]
+            val name = _contactCache.value[call.number]?.name
             if (!(call.number.contains(q, ignoreCase = true) ||
                         name?.contains(q, ignoreCase = true) == true)
             ) return false
         }
-        
+
         if (state.selectedDay != "all" && call.dayName != state.selectedDay) return false
-        
+
         return true
     }
 }

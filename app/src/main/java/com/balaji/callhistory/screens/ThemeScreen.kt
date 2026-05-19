@@ -23,7 +23,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.balaji.callhistory.R
 import com.balaji.callhistory.utils.DarkModeState
 import com.balaji.callhistory.utils.ThemePreferences
 import kotlinx.coroutines.flow.update
@@ -40,10 +42,10 @@ fun ThemeScreen(onBackClick: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Theme") },
+                title = { Text(stringResource(R.string.theme)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 }
             )
@@ -56,27 +58,27 @@ fun ThemeScreen(onBackClick: () -> Unit) {
                 .padding(16.dp)
         ) {
             Text(
-                text = "Choose theme",
+                text = stringResource(R.string.choose_theme),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            ThemeOption("Light", themeMode == "light") {
-                scope.launch { 
+            ThemeOption(stringResource(R.string.theme_light), themeMode == "light") {
+                scope.launch {
                     ThemePreferences.setThemeMode(context, "light")
                     DarkModeState.getInstance().state.update { false }
                 }
             }
 
-            ThemeOption("Dark", themeMode == "dark") {
-                scope.launch { 
+            ThemeOption(stringResource(R.string.theme_dark), themeMode == "dark") {
+                scope.launch {
                     ThemePreferences.setThemeMode(context, "dark")
                     DarkModeState.getInstance().state.update { true }
                 }
             }
 
-            ThemeOption("System Default", themeMode == "system") {
-                scope.launch { 
+            ThemeOption(stringResource(R.string.theme_system_default), themeMode == "system") {
+                scope.launch {
                     ThemePreferences.setThemeMode(context, "system")
                     DarkModeState.getInstance().state.update { isSystemDark }
                 }

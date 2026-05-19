@@ -1,6 +1,9 @@
 package com.balaji.callhistory.repo
 
 import android.content.Context
+import android.database.ContentObserver
+import android.os.Handler
+import android.os.Looper
 import android.provider.CallLog
 import android.util.Log
 import androidx.paging.Pager
@@ -16,14 +19,47 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
 class CallHistoryRepository(private val context: Context) {
+
     private val _refreshTrigger = MutableStateFlow(0L)
     val refreshTrigger = _refreshTrigger.asStateFlow()
-    
+
+    /**
+     * ContentObserver watches CallLog.Calls.CONTENT_URI for any changes
+     * (new call recorded, call deleted) and triggers a paging refresh.
+     *
+     * This replaces the previous BroadcastReceiver(PHONE_STATE) approach which
+     * required READ_PHONE_STATE — a sensitive permission rejected by Google Play
+     * for not matching core app functionality.
+     *
+     * READ_CALL_LOG (already required for core functionality) is sufficient
+     * to observe this URI — no additional permissions needed.
+     */
+    private val callLogObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+            Log.d("CallHistory", "CallLog changed — triggering refresh")
+            triggerRefresh()
+        }
+    }
+
+    init {
+        // Register observer when repository is created (app lifetime)
+        context.contentResolver.registerContentObserver(
+            CallLog.Calls.CONTENT_URI,
+            /* notifyForDescendants = */ true,
+            callLogObserver
+        )
+    }
+
     fun triggerRefresh() {
         Log.d("CallHistory", "triggerRefresh")
         _refreshTrigger.value = System.currentTimeMillis()
     }
-    
+
+    /** Call this if the repository is ever torn down to avoid leaks. */
+    fun release() {
+        context.contentResolver.unregisterContentObserver(callLogObserver)
+    }
+
     fun getCallHistoryPager(callTypeFilter: String): Flow<PagingData<CallEntity>> {
         Log.d("CallHistory", "getCallHistoryPager")
         return Pager(

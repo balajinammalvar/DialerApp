@@ -22,8 +22,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.balaji.callhistory.R
 
 private const val ICON_ALPHA = 0.6f
 private const val ANIMATION_DURATION = 1500
@@ -72,9 +74,9 @@ fun EmptyStateContent(
         Spacer(Modifier.height(16.dp))
         Text(
             text = when {
-                isInitialLoad -> "Getting things ready"
-                hasFilters -> "No calls found"
-                else -> "No calls yet"
+                isInitialLoad -> stringResource(R.string.empty_getting_ready)
+                hasFilters -> stringResource(R.string.empty_no_calls_found)
+                else -> stringResource(R.string.empty_no_calls_yet)
             },
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -82,7 +84,7 @@ fun EmptyStateContent(
         if (isInitialLoad) {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Loading your call history...",
+                text = stringResource(R.string.empty_loading_history),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )
